@@ -64,7 +64,7 @@ using namespace std;
 
 const std::string hostname = "127.0.0.1"; //localhost IP Address
 
-//const std::string hostname = "192.168.1.13"; //STEP2 IP Address 
+//const std::string hostname = "192.168.1.14"; //STEP2 IP Address 
 
 //const std::string hostname = "192.168.0.100"; //STEP2 IP Address Monkey
 

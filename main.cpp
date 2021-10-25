@@ -1,6 +1,6 @@
 
-/* 
-* TCP Example For KIST Monkey Experiment 
+/*
+* TCP Example For KIST Monkey Experiment
 * TCP_HYUSPA.cpp
 * Created on: Mar 2, 2020
 *     Author: Sunhong Kim
@@ -44,10 +44,12 @@ union RecvData
 
 
 //float T_kp[4] ={10,10,10,10};
-float T_kp[4] ={10,10,15,10};
-float I_kp[4] = {10,10,15,10};
-float M_kp[4] = {10,10,15,10};
-float R_kp[4] = {8,10,5,10};
+float T_kp[4] ={7,10,7,8};
+float I_kp[4] = {8,10,7,8};
+float M_kp[4] = {8,10,7,8};
+float R_kp[4] = {8,10,2,8};
+//float R_kp[4] = {0,0,0,0};
+
 float P_kp[2] = {10,10};
 //float T_kd[4] = {0,0,0,0};
 //float I_kd[4] = {0,0,0,0};
@@ -56,10 +58,12 @@ float P_kp[2] = {10,10};
 
 
 //float T_kd[4] = {0.1,0.1,0.1,0.1};
-float T_kd[4] ={0.1,0.1,0.1,0.1};
-float I_kd[4] = {0.1,0.1,0.1,0.1};
-float M_kd[4] =  {0.1,0.1,0.1,0.1};
+float T_kd[4] ={0.1,0.1,0.1,0.2};
+float I_kd[4] = {0.1,0.1,0.1,0.2};
+float M_kd[4] =  {0.1,0.1,0.05,0.2};
 float R_kd[4] = {0.1,0.1,0.05,0.1};//{0.1,0.1,0.1,0.1};
+//float R_kd[4] = {0.1,0.1,0,0};//{0.1,0.1,0.1,0.1};
+//float R_kd[4] = {0,0,0,0};//{0.1,0.1,0.1,0.1};
 float P_kd[2] =  {0.05,0.05};
 
 
@@ -70,17 +74,19 @@ float R_ki[4] = {0,0,0,0};
 float P_ki[2] = {0,0};
 
 
-uint16_t T_target[4] = {20074, 27948, 41607, 15328};
-uint16_t I_target[4] = {21482,27061,35691,16452};
-uint16_t M_target[4] = {25610,24106,34374,16104};
-uint16_t R_target[4] = {24967,25692,2876,15877};
+uint16_t T_target[4] = {32797,13484,33141,16109};
+uint16_t I_target[4] = {31562,16563,32914,15763};
+uint16_t M_target[4] = {33837,14501,31732,17199};
+uint16_t R_target[4] = {32190,   17213,65534,15277 };
+
+
 uint16_t P_target[2] = {24858,24464};
 
-uint16_t T_min_torque[4] = {12000,12000,8000,12000};
-uint16_t I_min_torque[4] = {12000,12000,8000,12000};
-uint16_t M_min_torque[4] =  {12000,12000,8000,12000};
-uint16_t R_min_torque[4] =  {12000,12000,8000,12000};
-uint16_t P_min_torque[2] = {10000,8000};
+uint16_t T_min_torque[4] = {12000,12000,12000,12000};
+uint16_t I_min_torque[4] = {12000,12000,12000,12000};
+uint16_t M_min_torque[4] =  {12000,12000,12000,12000};
+uint16_t R_min_torque[4] =  {12000,12000,12000,12000};
+uint16_t P_min_torque[2] = {20000,20000};
 
 
 
@@ -98,7 +104,7 @@ float preM_vel[4] = {0,0,0,0};
 float preR_vel[4] = {0,0,0,0};
 float preP_vel[2] ={0,0};
 
-float T = 0.002;
+float T = 0.003;
 float tau =  0.01;
 
 
@@ -130,11 +136,11 @@ uint16_t preP_err[2] = {0x8000,0x8000};
                 //T_torque[0] = offset+12000;+
                 //T_torque[3] = offset+9500;+
                 
-uint16_t fric_offsetT[4] = {7000,3000,1000,3000};
-uint16_t fric_offsetI[4] = {4000,3000,1000,3000};
-uint16_t fric_offsetM[4] = {7000,3000,1000,3000};
-uint16_t fric_offsetR[4] = {2000,3000,500,3000};
-uint16_t fric_offsetP[2] = {7000,8000};
+uint16_t fric_offsetT[4] = {7000,4000,0,1000};
+uint16_t fric_offsetI[4] = {1000,6000,1000,1000};
+uint16_t fric_offsetM[4] = {7000,4000,0,1000};
+uint16_t fric_offsetR[4] = {2000,4000,1000,3000};
+uint16_t fric_offsetP[2] = {7000,6000};
 
 
 
@@ -213,18 +219,20 @@ class HYUControl: public Poco::Runnable{
         }
 
         ss.sendBytes(writeBuff,37,0);
-	int toggle = 1;
-	unsigned int count = 0;
+    int toggle = 1;
+    unsigned int count = 0;
         while(!kill_flag){
-		
+       
             unsigned char receiveBuff[37];
-	    ss.receiveBytes(receiveBuff,37,0);
-            usleep(2000); 
+        ss.receiveBytes(receiveBuff,37,0);
+            usleep(3000);
             for(int i=0 ; i<4 ; i++){ // 32/2/4 -> 32/8 -> 4
                 T_pos[i] = ((receiveBuff[i*2] << 8) & 0xFF00) | (receiveBuff[i*2+1] & 0x00FF);
                 I_pos[i] = ((receiveBuff[i*2+8] << 8) & 0xFF00) | (receiveBuff[i*2+9] & 0x00FF);
                 M_pos[i] = ((receiveBuff[i*2+16] << 8) & 0xFF00) | (receiveBuff[i*2+17] & 0x00FF);
                 R_pos[i] = ((receiveBuff[i*2+24] << 8) & 0xFF00) | (receiveBuff[i*2+25] & 0x00FF);
+
+                if(R_pos[2]>60000)R_pos[2] = (R_pos[2]-65535);
                 
                 T_vel[i] = (preT_pos[i]-T_pos[i])/T;
                 I_vel[i] = (preI_pos[i]-I_pos[i])/T;
@@ -232,69 +240,69 @@ class HYUControl: public Poco::Runnable{
                 R_vel[i] = (preR_pos[i]-R_pos[i])/T;
                 
             }
-	    for(int i =0;i<2;i++){
-	    	P_pos[i] = ((receiveBuff[i*2+32] << 8) & 0xFF00) | (receiveBuff[i*2+33]& 0x00FF);
+        for(int i =0;i<2;i++){
+            P_pos[i] = ((receiveBuff[i*2+32] << 8) & 0xFF00) | (receiveBuff[i*2+33]& 0x00FF);
                 P_vel[i] = (preP_pos[i]-P_pos[i])/T;
-	    }
+        }
             for(int i=0; i<4; i++){
                 T_Err[i] = T_target[i] - T_pos[i];
                 I_Err[i] = I_target[i] - I_pos[i];
                 M_Err[i] = M_target[i] - M_pos[i];
                 R_Err[i] = R_target[i] - R_pos[i];
                 
-        	T_sumErr[i] = T_sumErr[i]+ T_Err[i]*T;   
-        	I_sumErr[i] = I_sumErr[i]+ I_Err[i]*T;   
-        	M_sumErr[i] = M_sumErr[i]+ M_Err[i]*T;   
-        	R_sumErr[i] = R_sumErr[i]+ R_Err[i]*T;   
-        	     
+            T_sumErr[i] = T_sumErr[i]+ T_Err[i]*T;  
+            I_sumErr[i] = I_sumErr[i]+ I_Err[i]*T;  
+            M_sumErr[i] = M_sumErr[i]+ M_Err[i]*T;  
+            R_sumErr[i] = R_sumErr[i]+ R_Err[i]*T;  
+                
             }
-	    for(int i = 0;i<2;i++){
-		P_Err[i] = P_target[i] - P_pos[i];
-		P_sumErr[i] = P_sumErr[i]+ P_Err[i]*T;   
-        	
-	    
-	    }
+        for(int i = 0;i<2;i++){
+        P_Err[i] = P_target[i] - P_pos[i];
+        P_sumErr[i] = P_sumErr[i]+ P_Err[i]*T;  
+           
+       
+        }
                 cout << "\x1B[2J\x1B[H";
 /*
-	    cout<<"T_Err : "<<T_Err[0]<<","<<T_Err[1]<<","<<T_Err[2]<<","<<T_Err[3] <<std::endl;
+        cout<<"T_Err : "<<T_Err[0]<<","<<T_Err[1]<<","<<T_Err[2]<<","<<T_Err[3] <<std::endl;
             cout<<"T_sumErr : "<<T_sumErr[0]<<","<<T_sumErr[1]<<","<<T_sumErr[2]<<","<<T_sumErr[3] <<std::endl;
-	    cout<<"T_pos : "<<T_pos[0]<<","<<T_pos[1]<<","<<T_pos[2]<<","<<T_pos[3] <<std::endl;
-    	    cout<<"T_vel : "<<T_vel[0]<<","<<T_vel[1]<<","<<T_vel[2]<<","<<T_vel[3] <<std::endl;
+        cout<<"T_pos : "<<T_pos[0]<<","<<T_pos[1]<<","<<T_pos[2]<<","<<T_pos[3] <<std::endl;
+            cout<<"T_vel : "<<T_vel[0]<<","<<T_vel[1]<<","<<T_vel[2]<<","<<T_vel[3] <<std::endl;
 */
 /*
-	    cout<<"I_Err : "<<I_Err[0]<<","<<I_Err[1]<<","<<I_Err[2]<<","<<I_Err[3] <<std::endl;
+        cout<<"I_Err : "<<I_Err[0]<<","<<I_Err[1]<<","<<I_Err[2]<<","<<I_Err[3] <<std::endl;
             cout<<"I_sumErr : "<<I_sumErr[0]<<","<<I_sumErr[1]<<","<<I_sumErr[2]<<","<<I_sumErr[3] <<std::endl;
-	    cout<<"I_pos : "<<I_pos[0]<<","<<I_pos[1]<<","<<I_pos[2]<<","<<I_pos[3] <<std::endl;
-    	    cout<<"I_vel : "<<I_vel[0]<<","<<I_vel[1]<<","<<I_vel[2]<<","<<I_vel[3] <<std::endl;
+        cout<<"I_pos : "<<I_pos[0]<<","<<I_pos[1]<<","<<I_pos[2]<<","<<I_pos[3] <<std::endl;
+            cout<<"I_vel : "<<I_vel[0]<<","<<I_vel[1]<<","<<I_vel[2]<<","<<I_vel[3] <<std::endl;
 */
 /*
-	    cout<<"R_Err : "   <<R_Err[0]<<","   <<R_Err[1]<<","   <<R_Err[2]<<","   <<R_Err[3] <<std::endl;
+        cout<<"R_Err : "   <<R_Err[0]<<","   <<R_Err[1]<<","   <<R_Err[2]<<","   <<R_Err[3] <<std::endl;
             cout<<"R_sumErr : "<<R_sumErr[0]<<","<<R_sumErr[1]<<","<<R_sumErr[2]<<","<<R_sumErr[3] <<std::endl;
-	    cout<<"R_pos : "   <<R_pos[0]<<",   "<<R_pos[1]<<","   <<R_pos[2]<<","   <<R_pos[3] <<std::endl;
-    	    cout<<"R_vel : "   <<R_vel[0]<<","   <<R_vel[1]<<","   <<R_vel[2]<<","   <<R_vel[3] <<std::endl;
+        cout<<"R_pos : "   <<R_pos[0]<<",   "<<R_pos[1]<<","   <<R_pos[2]<<","   <<R_pos[3] <<std::endl;
+            cout<<"R_vel : "   <<R_vel[0]<<","   <<R_vel[1]<<","   <<R_vel[2]<<","   <<R_vel[3] <<std::endl;
 */
 /*
-	    cout<<"M_Err : "   <<M_Err[0]<<","   <<M_Err[1]<<","   <<M_Err[2]<<","   <<M_Err[3] <<std::endl;
+        cout<<"M_Err : "   <<M_Err[0]<<","   <<M_Err[1]<<","   <<M_Err[2]<<","   <<M_Err[3] <<std::endl;
             cout<<"M_sumErr : "<<M_sumErr[0]<<","<<M_sumErr[1]<<","<<M_sumErr[2]<<","<<M_sumErr[3] <<std::endl;
-	    cout<<"M_pos : "   <<M_pos[0]<<",   "<<M_pos[1]<<","   <<M_pos[2]<<","   <<M_pos[3] <<std::endl;
-    	    cout<<"M_vel : "   <<M_vel[0]<<","   <<M_vel[1]<<","   <<M_vel[2]<<","   <<M_vel[3] <<std::endl;
+        cout<<"M_pos : "   <<M_pos[0]<<",   "<<M_pos[1]<<","   <<M_pos[2]<<","   <<M_pos[3] <<std::endl;
+            cout<<"M_vel : "   <<M_vel[0]<<","   <<M_vel[1]<<","   <<M_vel[2]<<","   <<M_vel[3] <<std::endl;
 */
 
 /*
-	    cout<<"P_Err : "   <<P_Err[0]<<","   <<P_Err[1]<<","   <<P_Err[2]<<","   <<P_Err[3] <<std::endl;
+        cout<<"P_Err : "   <<P_Err[0]<<","   <<P_Err[1]<<","   <<P_Err[2]<<","   <<P_Err[3] <<std::endl;
             cout<<"P_sumErr : "<<P_sumErr[0]<<","<<P_sumErr[1]<<","<<P_sumErr[2]<<","<<P_sumErr[3] <<std::endl;
-	    cout<<"P_pos : "   <<P_pos[0]<<",   "<<P_pos[1]<<","   <<P_pos[2]<<","   <<P_pos[3] <<std::endl;
-    	    cout<<"P_vel : "   <<P_vel[0]<<","   <<P_vel[1]<<","   <<P_vel[2]<<","   <<P_vel[3] <<std::endl;
+        cout<<"P_pos : "   <<P_pos[0]<<",   "<<P_pos[1]<<","   <<P_pos[2]<<","   <<P_pos[3] <<std::endl;
+            cout<<"P_vel : "   <<P_vel[0]<<","   <<P_vel[1]<<","   <<P_vel[2]<<","   <<P_vel[3] <<std::endl;
 
 */
 
-	    cout<<"T_pos : "<<T_pos[0]<<","<<T_pos[1]<<","<<T_pos[2]<<","<<T_pos[3] <<std::endl;
-	    cout<<"I_pos : "<<I_pos[0]<<","<<I_pos[1]<<","<<I_pos[2]<<","<<I_pos[3] <<std::endl;
-	    cout<<"M_pos : "   <<M_pos[0]<<",   "<<M_pos[1]<<","   <<M_pos[2]<<","   <<M_pos[3] <<std::endl;
-	    cout<<"R_pos : "   <<R_pos[0]<<",   "<<R_pos[1]<<","   <<R_pos[2]<<","   <<R_pos[3] <<std::endl;
+        cout<<"T_pos : "<<T_pos[0]<<","<<T_pos[1]<<","<<T_pos[2]<<","<<T_pos[3] <<std::endl;
+        cout<<"I_pos : "<<I_pos[0]<<","<<I_pos[1]<<","<<I_pos[2]<<","<<I_pos[3] <<std::endl;
+        cout<<"M_pos : "   <<M_pos[0]<<",   "<<M_pos[1]<<","   <<M_pos[2]<<","   <<M_pos[3] <<std::endl;
+        cout<<"R_pos : "   <<R_pos[0]<<",   "<<R_pos[1]<<","   <<R_pos[2]<<","   <<R_pos[3] <<std::endl;
 
-	    cout<<"P_pos : "   <<P_pos[0]<<",   "<<P_pos[1]<<","   <<P_pos[2]<<","   <<P_pos[3] <<std::endl;
-	    
+        cout<<"P_pos : "   <<P_pos[0]<<",   "<<P_pos[1]<<","   <<P_pos[2]<<","   <<P_pos[3] <<std::endl;
+       
             for(int i=0; i<4; i++){
 
                T_torque[i] = (float)(T_kp[i]*(T_Err[i])+T_kd[i]*(float)(T_vel[i]))+(float)(T_ki[i]*T_sumErr[i])+offset; //offset = 0x8000
@@ -312,69 +320,85 @@ class HYUControl: public Poco::Runnable{
                 if(R_torque[i]>65534-R_min_torque[i]) R_torque[i] = 65534-R_min_torque[i];
                 
                 if(abs(T_torque[i]-offset)<abs(fric_offsetT[i])){
-                	if((T_torque[i]-offset)<0){
-                		T_torque[i] = offset-fric_offsetT[i];
-                	}
-                	else if((T_torque[i]-offset)>=0){
-                		T_torque[i] = offset+fric_offsetT[i];
-                	}
+                    if((T_torque[i]-offset)<0){
+                        T_torque[i] = offset-fric_offsetT[i];
+                    }
+                    else if((T_torque[i]-offset)>=0){
+                        T_torque[i] = offset+fric_offsetT[i];
+                    }
                 }
                 
                 if(abs(I_torque[i]-offset)<abs(fric_offsetI[i])){
-                	if((I_torque[i]-offset)<0){
-                		I_torque[i] = offset-fric_offsetI[i];
-                	}
-                	else if((I_torque[i]-offset)>=0){
-                		I_torque[i] = offset+fric_offsetI[i];
-                	}
+                    if((I_torque[i]-offset)<0){
+                        I_torque[i] = offset-fric_offsetI[i];
+                    }
+                    else if((I_torque[i]-offset)>=0){
+                        I_torque[i] = offset+fric_offsetI[i];
+                    }
                 }
                 if(abs(M_torque[i]-offset)<abs(fric_offsetM[i])){
-                	if((M_torque[i]-offset)<0){
-                		M_torque[i] = offset-fric_offsetM[i];
-                	}
-                	else if((M_torque[i]-offset)>=0){
-                		M_torque[i] = offset+fric_offsetM[i];
-                	}
+                    if((M_torque[i]-offset)<0){
+                        M_torque[i] = offset-fric_offsetM[i];
+                    }
+                    else if((M_torque[i]-offset)>=0){
+                        M_torque[i] = offset+fric_offsetM[i];
+                    }
                 }
                 if(abs(R_torque[i]-offset)<abs(fric_offsetR[i])){
-                	if((R_torque[i]-offset)<0){
-                		R_torque[i] = offset-fric_offsetR[i];
-                	}
-                	else if((R_torque[i]-offset)>=0){
-                		R_torque[i] = offset+fric_offsetR[i];
-                	}
+                    if((R_torque[i]-offset)<0){
+                        R_torque[i] = offset-fric_offsetR[i];
+                    }
+                    else if((R_torque[i]-offset)>=0){
+                        R_torque[i] = offset+fric_offsetR[i];
+                    }
                 }    
+                
+                   T_torque[2] = 10000;
+                   I_torque[2] = 10000;
+                   M_torque[2] = 10000;
+                   R_torque[2] = 10000;
+                   
+                   T_torque[0] = 65534-20000;
+                   I_torque[0] = 65534-25000;
+                   M_torque[0] = 65534-20000;
+
+                   
+                
                 if(torque_flag == false){          
-			T_torque[i] = offset;
-			I_torque[i] = offset;
-			M_torque[i] = offset;
-			R_torque[i] = offset;
+		    T_torque[i] = offset;
+		    I_torque[i] = offset;
+		    M_torque[i] = offset;
+		    R_torque[i] = offset;
+		    
 		}
-		
+
+
+       
             }
             for(int i = 0;i<2;i++){
                 P_torque[i] = (float)(P_kp[i]*(P_Err[i])+P_kd[i]*(float)(P_vel[i]))+(float)(P_ki[i]*P_sumErr[i])+offset; //offset = 0x8000
-		if(P_torque[i]<0+T_min_torque[i])P_torque[i] = T_min_torque[i];
-		if(P_torque[i]>65534-P_min_torque[i])P_torque[i]=65534-P_min_torque[i];
+        if(P_torque[i]<0+T_min_torque[i])P_torque[i] = T_min_torque[i];
+        if(P_torque[i]>65534-P_min_torque[i])P_torque[i]=65534-P_min_torque[i];
                 if(abs(P_torque[i]-offset)<abs(fric_offsetP[i])){
-                	if((P_torque[i]-offset)<0){
-                		P_torque[i] = offset-fric_offsetP[i];
-                	}
-                	else if((P_torque[i]-offset)>=0){
-                		P_torque[i] = offset+fric_offsetP[i];
-                	}
+                    if((P_torque[i]-offset)<0){
+                        P_torque[i] = offset-fric_offsetP[i];
+                    }
+                    else if((P_torque[i]-offset)>=0){
+                        P_torque[i] = offset+fric_offsetP[i];
+                    }
                 }
                 if(torque_flag == false)
-                	P_torque[i] =offset;         
+                    P_torque[i] =offset; 
+               P_torque[i] =offset;               
 
-	    }
-	  //   cout<<"T_torque : "<<T_torque[0]-0x8000<<","<<T_torque[1]-0x8000<<","<<T_torque[2]-0x8000<<","<<T_torque[3] -0x8000<<std::endl;
-	  //   cout<<"I_torque : "<<I_torque[0]-0x8000<<","<<I_torque[1]-0x8000<<","<<I_torque[2]-0x8000<<","<<I_torque[3] -0x8000<<std::endl;
-	  //   cout<<"T_torque : "<<T_torque[0]-0x8000<<","<<T_torque[1]-0x8000<<","<<T_torque[2]-0x8000<<","<<T_torque[3] -0x8000<<std::endl;
-	  //   cout<<"R_torque : "<<R_torque[0]-0x8000<<","<<R_torque[1]-0x8000<<","<<R_torque[2]-0x8000<<","<<R_torque[3] -0x8000<<std::endl;
-	     //cout<<"P_torque : "<<P_torque[0]-0x8000<<","<<P_torque[1]-0x8000<<","<<P_torque[2]-0x8000<<","<<P_torque[3] -0x8000<<std::endl;
-	     
-	     
+        }
+      //   cout<<"T_torque : "<<T_torque[0]-0x8000<<","<<T_torque[1]-0x8000<<","<<T_torque[2]-0x8000<<","<<T_torque[3] -0x8000<<std::endl;
+      //   cout<<"I_torque : "<<I_torque[0]-0x8000<<","<<I_torque[1]-0x8000<<","<<I_torque[2]-0x8000<<","<<I_torque[3] -0x8000<<std::endl;
+      //   cout<<"T_torque : "<<T_torque[0]-0x8000<<","<<T_torque[1]-0x8000<<","<<T_torque[2]-0x8000<<","<<T_torque[3] -0x8000<<std::endl;
+      //   cout<<"R_torque : "<<R_torque[0]-0x8000<<","<<R_torque[1]-0x8000<<","<<R_torque[2]-0x8000<<","<<R_torque[3] -0x8000<<std::endl;
+         //cout<<"P_torque : "<<P_torque[0]-0x8000<<","<<P_torque[1]-0x8000<<","<<P_torque[2]-0x8000<<","<<P_torque[3] -0x8000<<std::endl;
+        
+        
             for(int i=0 ; i<4 ; i++){
                 preT_pos[i] = T_pos[i];
                 preI_pos[i] = I_pos[i];
@@ -382,10 +406,10 @@ class HYUControl: public Poco::Runnable{
                 preR_pos[i] = R_pos[i];
 
             }
-	    for(int i=0;i<2;i++){
-	    	preP_pos[i] = P_pos[i];
+        for(int i=0;i<2;i++){
+            preP_pos[i] = P_pos[i];
 
-	    }
+        }
 
 
             unsigned char TIMR_Duty[37];
@@ -404,9 +428,9 @@ class HYUControl: public Poco::Runnable{
                 TIMR_Duty[i*2+26] = (int)R_torque[i] & 0x00FF;
             }
             for(int i =0;i<2;i++){
-	    	TIMR_Duty[i*2+33] =  ((int)P_torque[i] >> 8 ) & 0x00FF;
-		TIMR_Duty[i*2+34] = (int)P_torque[i] & 0x00FF;
-	    }
+            TIMR_Duty[i*2+33] =  ((int)P_torque[i] >> 8 ) & 0x00FF;
+        TIMR_Duty[i*2+34] = (int)P_torque[i] & 0x00FF;
+        }
 
             ss.sendBytes(TIMR_Duty,37,0);
 
@@ -416,49 +440,49 @@ class HYUControl: public Poco::Runnable{
         
         
         
-        // finish 
-		for(int i=0; i<4; i++){
-			T_torque[i]= offset ;
-			I_torque[i]= offset ;
-			M_torque[i]= offset ;
-			R_torque[i]= offset ;
-		}for(int i=0;i<2;i++){
-			P_torque[i]= offset ;
-		}
+        // finish
+        for(int i=0; i<4; i++){
+            T_torque[i]= offset ;
+            I_torque[i]= offset ;
+            M_torque[i]= offset ;
+            R_torque[i]= offset ;
+        }for(int i=0;i<2;i++){
+            P_torque[i]= offset ;
+        }
 
-	    unsigned char TIMR_Duty[37];
-	    TIMR_Duty[0] = 0x00; // ID
-	    for(int i=0; i<4; i++){
-		TIMR_Duty[i*2+1] = ((int)T_torque[i] >> 8) & 0x00FF;
-		TIMR_Duty[i*2+2] = (int)T_torque[i] & 0x00FF;
+        unsigned char TIMR_Duty[37];
+        TIMR_Duty[0] = 0x00; // ID
+        for(int i=0; i<4; i++){
+        TIMR_Duty[i*2+1] = ((int)T_torque[i] >> 8) & 0x00FF;
+        TIMR_Duty[i*2+2] = (int)T_torque[i] & 0x00FF;
 
-		TIMR_Duty[i*2+9] = ((int)I_torque[i] >> 8) & 0x00FF;
-		TIMR_Duty[i*2+10] = (int)I_torque[i] & 0x00FF;
+        TIMR_Duty[i*2+9] = ((int)I_torque[i] >> 8) & 0x00FF;
+        TIMR_Duty[i*2+10] = (int)I_torque[i] & 0x00FF;
 
-		TIMR_Duty[i*2+17] = ((int)M_torque[i] >> 8) & 0x00FF;
-		TIMR_Duty[i*2+18] = (int)M_torque[i] & 0x00FF;
+        TIMR_Duty[i*2+17] = ((int)M_torque[i] >> 8) & 0x00FF;
+        TIMR_Duty[i*2+18] = (int)M_torque[i] & 0x00FF;
 
-		TIMR_Duty[i*2+25] = ((int)R_torque[i] >> 8) & 0x00FF;
-		TIMR_Duty[i*2+26] = (int)R_torque[i] & 0x00FF;
-	    }
-	    for(int i =0;i<2;i++){
-	    	TIMR_Duty[i*2+33] =  ((int)P_torque[i] >> 8 ) & 0x00FF;
-		TIMR_Duty[i*2+34] = (int)P_torque[i] & 0x00FF;
-	    }
+        TIMR_Duty[i*2+25] = ((int)R_torque[i] >> 8) & 0x00FF;
+        TIMR_Duty[i*2+26] = (int)R_torque[i] & 0x00FF;
+        }
+        for(int i =0;i<2;i++){
+            TIMR_Duty[i*2+33] =  ((int)P_torque[i] >> 8 ) & 0x00FF;
+        TIMR_Duty[i*2+34] = (int)P_torque[i] & 0x00FF;
+        }
 
-	    ss.sendBytes(TIMR_Duty,37,0);
+        ss.sendBytes(TIMR_Duty,37,0);
             unsigned char receiveBuff[37];
-	    ss.receiveBytes(receiveBuff,37,0);
-            usleep(2000); 
+        ss.receiveBytes(receiveBuff,37,0);
+            usleep(2000);
             
             for(int i =0;i<5;i++){
-	    	    ss.sendBytes(TIMR_Duty,37,0);
-		    ss.receiveBytes(receiveBuff,37,0);
-		    usleep(2000); 
+                ss.sendBytes(TIMR_Duty,37,0);
+            ss.receiveBytes(receiveBuff,37,0);
+            usleep(2000);
             }
 
 
-	    usleep(100000);
+        usleep(100000);
          ss.close();
         
 
@@ -477,14 +501,14 @@ int main(int argc, char **argv)
 
 
     if(argc>=2){
-	std::cout<<argv[1]<<std::endl;
-	if(atoi(argv[1]) == 1)
-		torque_flag = true;
-	else
-		torque_flag = false;
+    std::cout<<argv[1]<<std::endl;
+    if(atoi(argv[1]) == 1)
+        torque_flag = true;
+    else
+        torque_flag = false;
     }
     else{
-    	return 0;
+        return 0;
     }
     
     
@@ -560,110 +584,130 @@ int main(int argc, char **argv)
                             if ( data_rev.cmd[0] == 1){
                                  std::cout << "MOTION 1 " <<buffer << std::endl;
 
-                                T_target[0] = 20074;
-                                T_target[1] = 27948;
-                                T_target[2] = 41607;
-                                T_target[3] = 15328;
 
-                                I_target[0] = 21482;
-                                I_target[1] = 27061;
-                                I_target[2] = 35691;
-                                I_target[3] = 16452;
+
+
+
+
+                                T_target[0] = 32797;
+                                T_target[1] = 13484;
+                                T_target[2] = 33141;
+                                T_target[3] = 16109;
+
+                                I_target[0] = 31562;
+                                I_target[1] = 16563;
+                                I_target[2] = 32914;
+                                I_target[3] = 15763;
                                 
-                                M_target[0] = 25610;
-                                M_target[1] = 24106;
-                                M_target[2] = 34374;
-                                M_target[3] = 16104;
+                                M_target[0] = 33837;
+                                M_target[1] = 14501;
+                                M_target[2] = 31732;
+                                M_target[3] = 17199;
                                 
-                                R_target[0] = 24967;
-                                R_target[1] = 25692;
-                                R_target[2] = 2876;
-                                R_target[3] = 15877;
+                                R_target[0] = 32190;
+                                R_target[1] = 17213;
+                                R_target[2] = 65534;
+                                R_target[3] = 15277;
+
+		
+
                                 
-                                P_target[0] = 24858;
-                                P_target[1] = 24464;
+                          
 
                                                             
                             }
                             else if ( data_rev.cmd[0] == 3){
                                  std::cout << "MOTION 3  "<< data_rev.cmd[0]<<buffer << std::endl;
-                                T_target[0] = 19931;
-                                T_target[1] = 27875;
-                                T_target[2] = 36623;
-                                T_target[3] = 14998;
+                                T_target[0] = 32797;
+                                T_target[1] = 13484;
+                                T_target[2] = 33141;
+                                T_target[3] = 16109;
 
-                                I_target[0] = 23430;
-                                I_target[1] = 28226;
-                                I_target[2] = 36480;
-                                I_target[3] = 15966;
+                                I_target[0] = 31562;
+                                I_target[1] = 16563;
+                                I_target[2] = 32914;
+                                I_target[3] = 15763;
                                 
-                                M_target[0] = 25737;
-                                M_target[1] = 25587;
-                                M_target[2] = 34420;
-                                M_target[3] = 16702;
+                                M_target[0] = 33837;
+                                M_target[1] = 14501;
+                                M_target[2] = 31732;
+                                M_target[3] = 17199;
                                 
-                                R_target[0] = 23250;
-                                R_target[1] = 29299;
-                                R_target[2] = 3111;
-                                R_target[3] = 16053;
-                                
-                                P_target[0] = 24866;
-                                P_target[1] = 53274;
+                                R_target[0] = 32190;
+                                R_target[1] = 17213;
+                                R_target[2] = 65534;
+                                R_target[3] = 15277;
+                               
+
+                               
+                                T_target[3] = 14274;
+                                I_target[3] = 16763;
+                                M_target[3] = 16019;
+                                R_target[3] = 16865;
                                 
 
 
                             }
                             else if ( data_rev.cmd[0] == 2){
                                  std::cout << "MOTION 2 "<< data_rev.cmd[0]<<buffer << std::endl;
-                                T_target[0] = 21000;
-                                T_target[1] = 26194;
-                                T_target[2] = 40564;
-                                T_target[3] = 14220;
+                                T_target[0] = 32797;
+                                T_target[1] = 13484;
+                                T_target[2] = 33141;
+                                T_target[3] = 16109;
 
-                                I_target[0] = 22103;
-                                I_target[1] = 27062;
-                                I_target[2] = 38630;
-                                I_target[3] = 15958;
+                                I_target[0] = 31562;
+                                I_target[1] = 16563;
+                                I_target[2] = 32914;
+                                I_target[3] = 15763;
                                 
-                                M_target[0] = 25737;
-                                M_target[1] = 24325;
-                                M_target[2] = 38630;
-                                M_target[3] = 15958;
+                                M_target[0] = 33837;
+                                M_target[1] = 14501;
+                                M_target[2] = 31732;
+                                M_target[3] = 17199;
                                 
-                                R_target[0] = 20413;
-                                R_target[1] = 29227;
-                                R_target[2] = 10612;
-                                R_target[3] = 15983;
-                                
-                                P_target[0] = 24859;
-                                P_target[1] = 53273;
+                                R_target[0] = 32190;
+                                R_target[1] = 17213;
+                                R_target[2] = 65534;
+                                R_target[3] = 15277;
+                               T_target[1] = 20533;
+                                I_target[1] = 23811;
+                                M_target[1] = 23352;
+                                R_target[1] = 24278;   
+                               
 
                             }
 
                             else if ( data_rev.cmd[0] == 4){
                                  std::cout << "MOTION 4 "<< data_rev.cmd[0]<<buffer << std::endl;
-                                 T_target[0] = 24518;
-                                T_target[1] = 26434;
-                                T_target[2] = 38169;
-                                T_target[3] = 14343;
+                                T_target[0] = 32797;
+                                T_target[1] = 13484;
+                                T_target[2] = 33141;
+                                T_target[3] = 16109;
 
-                                I_target[0] = 16876;
-                                I_target[1] = 32498;
-                                I_target[2] = 33184;
-                                I_target[3] = 17268;
+                                I_target[0] = 31562;
+                                I_target[1] = 16563;
+                                I_target[2] = 32914;
+                                I_target[3] = 15763;
                                 
-                                M_target[0] = 18083;
-                                M_target[1] = 30353;
-                                M_target[2] = 31385;
-                                M_target[3] = 15292;
+                                M_target[0] = 33837;
+                                M_target[1] = 14501;
+                                M_target[2] = 31732;
+                                M_target[3] = 17199;
                                 
-                                R_target[0] = 25662;
-                                R_target[1] = 30616;
-                                R_target[2] = 7276;
-                                R_target[3] = 17338;
-                                
-                                P_target[0] = 25442;
-                                P_target[1] = 52961;
+                                R_target[0] = 32190;
+                                R_target[1] = 17213;
+                                R_target[2] = 65534;
+                                R_target[3] = 15277;
+                               
+                                T_target[1] = 20533;
+                                I_target[1] = 23811;
+                                M_target[1] = 23352;
+                                R_target[1] = 24278;   
+                               
+                                T_target[3] = 14274;
+                                I_target[3] = 16763;
+                                M_target[3] = 16019;
+                                R_target[3] = 16865;
                             }
 
                             else if ( data_rev.cmd[0] == 5){
@@ -683,10 +727,10 @@ int main(int argc, char **argv)
                                 M_target[2] = 34374;
                                 M_target[3] = 16104;
                                 
-                                R_target[0] = 24967;
-                                R_target[1] = 25692;
-                                R_target[2] = 2876;
-                                R_target[3] = 15877;
+                                R_target[0] = 25000;
+                                R_target[1] = 30000;
+                                R_target[2] = 9000;
+                                R_target[3] = 17000;
                                 
                                 P_target[0] = 24858;
                                 P_target[1] = 24464;
@@ -761,6 +805,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-
-
